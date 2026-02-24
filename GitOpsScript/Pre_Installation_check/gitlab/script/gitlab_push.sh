@@ -97,37 +97,49 @@
 # 使用场景：安全、跨平台，一次执行完成 PAT 配置和代码上传
 # ===============================================
 
+#!/bin/bash
+# ===============================================
+# GitHub 自动上传脚本（引用全局常量文件）
+# 使用场景：CI/CD 自动化，一次执行完成 PAT 注入 + Push
+# ===============================================
+
 set -euo pipefail
 
 # ====== 参数读取 ======
 if [ $# -lt 1 ]; then
     echo "❌ 请提供要上传的目录路径"
-    echo "用法: ./upload.sh <目录路径> [分支] [commit信息]"
+    echo "用法: ./upload.sh <目录路径> [commit信息]"
     exit 1
 fi
 
 TARGET_DIR="$1"
-BRANCH="${2:-main}"
-COMMIT_MSG="${3:-自动上传代码 $(date '+%Y-%m-%d %H:%M:%S')}"
+COMMIT_MSG="${2:-自动上传代码 $(date '+%Y-%m-%d %H:%M:%S')}"
 
 if [ ! -d "$TARGET_DIR/.git" ]; then
     echo "❌ 目录 $TARGET_DIR 不是一个 Git 仓库"
     exit 1
 fi
 
-echo "🔹 切换到目录: $TARGET_DIR"
 cd "$TARGET_DIR"
+echo "🔹 切换到目录: $TARGET_DIR"
 
-# ====== 环境变量 PAT 和用户名 ======
-GITLAB_USER="${GITLAB_USER:-}"
-GITLAB_PAT="${GITLAB_PAT:-}"
+# ====== 引入全局常量 ======
+CONSTANT_FILE="$HOME/git_constants.sh"
 
-if [[ -z "$GITLAB_USER" || -z "$GITLAB_PAT" ]]; then
-    echo "❌ 请先设置环境变量 GITLAB_USER 和 GITLAB_PAT"
+if [[ ! -f "$CONSTANT_FILE" ]]; then
+    echo "❌ 全局常量文件不存在: $CONSTANT_FILE"
     exit 1
 fi
 
-REPO_URL="https://github.com/ribenit-com/Multi-Agent-System.git"
+source "$CONSTANT_FILE"
+
+# 检查变量是否存在
+if [[ -z "$GITLAB_USER" || -z "$GITLAB_PAT" || -z "$REPO_URL" ]]; then
+    echo "❌ 全局常量文件缺少必要变量（GITLAB_USER / GITLAB_PAT / REPO_URL）"
+    exit 1
+fi
+
+BRANCH="${BRANCH:-main}"
 
 # ====== 自动选择安全凭证 helper ======
 OS_TYPE=$(uname | tr '[:upper:]' '[:lower:]')
@@ -142,34 +154,25 @@ else
     CRED_HELPER="store"
 fi
 
-echo "🔹 使用凭证 helper: $CRED_HELPER"
 git config credential.helper "$CRED_HELPER"
 
-# ====== 更新远程 URL 带用户名 ======
-echo "🔹 设置远程 URL 带用户名"
+# ====== 设置远程 URL ======
 git remote set-url origin "https://${GITLAB_USER}@${REPO_URL#https://}"
 
 # ====== 注入 PAT ======
-echo "🔹 注入 PAT 到凭证缓存"
 printf "protocol=https\nhost=github.com\nusername=%s\npassword=%s\n\n" "$GITLAB_USER" "$GITLAB_PAT" | git credential approve
 
 # ====== 测试仓库访问 ======
-echo "🔹 测试拉取仓库..."
 if git ls-remote "$REPO_URL" &>/dev/null; then
     echo "✅ PAT 认证成功，仓库可访问"
 else
-    echo "❌ PAT 认证失败，请检查用户名、PAT 或权限"
+    echo "❌ PAT 认证失败，请检查用户名或权限"
     exit 1
 fi
 
 # ====== 自动提交并推送 ======
-echo "🔹 添加修改并提交"
 git add .
-
-echo "🔹 提交信息: $COMMIT_MSG"
 git commit -m "$COMMIT_MSG" || echo "⚠️ 没有新修改，跳过 commit"
-
-echo "🔹 推送到远程分支: $BRANCH"
 git push origin "$BRANCH"
 
 echo "🎉 代码已成功上传到 $BRANCH 分支"
