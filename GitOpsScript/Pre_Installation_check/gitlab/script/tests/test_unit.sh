@@ -3,14 +3,14 @@
 # test_unit.sh - 一键执行 Git 上传测试（含回滚）
 # 每次执行都强制下载最新 core/ 和 bin/ 脚本
 # 版本: v1.2
-# 修改日期: 2026-03-02 17:30
+# 修改日期: 2026-03-02 17:45
 # ==========================================
 
 set -euo pipefail  # 开启严格模式
 
 # ====== 版本信息打印 ======
 SCRIPT_VERSIONS=(
-    "test_unit.sh:v1.2:2026-03-02 17:30"
+    "test_unit.sh:v1.2:2026-03-02 17:45"
     "git_core.sh:v1.4:2026-03-02 16:50"
     "git_cli.sh:v1.0:2026-03-02 16:00"
     "logger.sh:v1.2:2026-03-02 15:45"
@@ -52,6 +52,8 @@ done
 
 # ====== 统一读取配置文件 ======
 GIT_CONST="$CONFIG_DIR/$CONFIG_FILE"
+
+# 如果文件不存在，生成占位文件
 if [ ! -f "$GIT_CONST" ]; then
     cat > "$GIT_CONST" <<'EOF'
 GITLAB_USER="你的GitHub用户名"
@@ -59,12 +61,14 @@ GITLAB_PAT="你的GitHub PAT"
 REPO_URL="https://github.com/username/repo.git"
 BRANCH="main"
 EOF
-    echo "[WARN] ⚠️ git_constants.sh 不存在，已生成占位文件，请确认内容："
+    echo "[WARN] ⚠️ git_constants.sh 不存在，已生成占位文件，请手动编辑为真实值："
     cat "$GIT_CONST"
-else
-    echo "[INFO] ℹ️ 使用已有 git_constants.sh，内容如下："
-    cat "$GIT_CONST"
+    exit 1  # 强制用户填写真实信息
 fi
+
+# 输出加载信息
+echo "[INFO] ℹ️ 使用配置文件 $GIT_CONST，内容如下："
+cat "$GIT_CONST"
 
 # ====== 初始化测试仓库 ======
 TEST_REPO="$BASE_DIR/test_repo"
