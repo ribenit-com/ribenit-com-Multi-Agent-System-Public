@@ -2,11 +2,11 @@
 # ==========================================
 # git_core.sh - Git 上传核心函数（增强版）
 # 版本: v1.4
-# 修改日期: 2026-03-02 17:50
+# 修改日期: 2026-03-02 18:00
 # 作者: ribenit-com
 # 说明:
 #   - 自动读取 git_constants.sh，可通过 GIT_CONST_PATH 覆盖默认路径
-#   - 默认读取 ~/test_git_upload/config/git_constants.sh
+#   - 默认读取 /GitOpsScript/Pre_Installation_check/gitlab/script/config/git_constants.sh
 #   - 支持回滚机制 + 默认 commit message
 #   - 支持首次 push main 分支，并改为 URL 注入用户名+PAT 方式
 #   - 输出 Bash 版本用于调试
@@ -17,7 +17,7 @@ set -euo pipefail  # 开启严格模式
 # -----------------------------
 # 输出版本信息
 # -----------------------------
-echo "[DEBUG] git_core.sh v1.4, last modified 2026-03-02 17:50"
+echo "[DEBUG] git_core.sh v1.4, last modified 2026-03-02 18:00"
 echo "[DEBUG] Bash version: $BASH_VERSION"
 
 # -----------------------------
@@ -65,14 +65,16 @@ upload_to_github() {
     echo "[DEBUG] 目标目录 dir=$dir"
 
     # -----------------------------
-    # 加载 git_constants.sh
-    # 默认 ~/test_git_upload/config/git_constants.sh，可被 GIT_CONST_PATH 覆盖
+    # 固定读取 git_constants.sh
     # -----------------------------
-    GIT_CONST_PATH="${GIT_CONST_PATH:-$HOME/test_git_upload/config/git_constants.sh}"
+    GIT_CONST_PATH="${GIT_CONST_PATH:-/GitOpsScript/Pre_Installation_check/gitlab/script/config/git_constants.sh}"
     if [ ! -f "$GIT_CONST_PATH" ]; then
         log_error "未找到 $GIT_CONST_PATH，请先创建配置文件"
         return 1
     fi
+
+    echo "[INFO] ℹ️ 使用配置文件 $GIT_CONST_PATH，内容如下："
+    cat "$GIT_CONST_PATH"
     echo "[DEBUG] 加载 $GIT_CONST_PATH"
     source "$GIT_CONST_PATH"
 
