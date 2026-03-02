@@ -4,46 +4,57 @@
 # 自动读取 ~/git_constants.sh
 # 支持回滚机制 + 默认 commit message
 # 支持首次 push main 分支，并改为 URL 注入用户名+PAT 方式
-# 完整安全版，增加详细调试打印
+# 完整安全版，增加详细调试打印与 PAT URL encode
 # ==========================================
 
-set -euo pipefail  # 开启严格模式：-e 出错停止，-u 未定义变量报错，-o pipefail 管道失败报错
+set -euo pipefail  # 开启严格模式
 
 # -----------------------------
 # 获取当前脚本目录
 # -----------------------------
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"   # 获取当前脚本所在目录绝对路径
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 echo "[DEBUG] SCRIPT_DIR=$SCRIPT_DIR"
 
 # -----------------------------
 # 加载日志模块和错误码
 # -----------------------------
-source "$SCRIPT_DIR/logger.sh"        # 加载日志工具
-source "$SCRIPT_DIR/error_codes.sh"   # 加载错误码定义
-source "$SCRIPT_DIR/git_exec.sh"      # 提供 git_set_remote、git_add_all、git_commit 等函数
+source "$SCRIPT_DIR/logger.sh"
+source "$SCRIPT_DIR/error_codes.sh"
+source "$SCRIPT_DIR/git_exec.sh"
 
 # -----------------------------
 # 工具函数：检测操作系统，返回 Git credential helper
 # -----------------------------
 detect_os_helper() {
     case "$(uname)" in
-        Darwin) echo "osxkeychain" ;;          # macOS 使用 osxkeychain
-        Linux)  echo "cache --timeout=3600" ;; # Linux 使用缓存 1 小时
-        *)      echo "store" ;;                 # 其他系统使用 store
+        Darwin) echo "osxkeychain" ;;
+        Linux)  echo "cache --timeout=3600" ;;
+        *)      echo "store" ;;
     esac
+}
+
+# -----------------------------
+# URL encode PAT（简单处理 @ -> %40, : -> %3A, / -> %2F）
+# -----------------------------
+url_encode() {
+    local str="$1"
+    str="${str//@/%40}"
+    str="${str//:/%3A}"
+    str="${str//\//%2F}"
+    echo "$str"
 }
 
 # -----------------------------
 # upload_to_github 函数
 # -----------------------------
 upload_to_github() {
-    local dir="$1"                             # 本地目录
-    local msg="${2:-自动提交 $(date)}"         # 提交信息，默认值防止空
+    local dir="$1"
+    local msg="${2:-自动提交 $(date)}"
 
     echo "[DEBUG] 目标目录 dir=$dir"
 
     # -----------------------------
-    # 从 ~/git_constants.sh 读取 GitHub 配置
+    # 加载 git_constants.sh
     # -----------------------------
     if [ ! -f "${HOME}/git_constants.sh" ]; then
         log_error "未找到 git_constants.sh，请先创建 ~/git_constants.sh"
@@ -53,18 +64,15 @@ upload_to_github() {
     echo "[DEBUG] 加载 ${HOME}/git_constants.sh"
     source "${HOME}/git_constants.sh"
 
-    # -----------------------------
-    # 打印调试信息
-    # -----------------------------
     echo "[DEBUG] GITLAB_USER=$GITLAB_USER"
-    echo "[DEBUG] GITLAB_PAT=${GITLAB_PAT:0:4}****"  # 只打印前4位
+    echo "[DEBUG] GITLAB_PAT=${GITLAB_PAT:0:4}****"
     echo "[DEBUG] REPO_URL=$REPO_URL"
     echo "[DEBUG] BRANCH=${BRANCH:-main}"
 
-    : "${GITLAB_USER:?请在 git_constants.sh 设置 GITLAB_USER}"   # 必须变量检查
+    : "${GITLAB_USER:?请在 git_constants.sh 设置 GITLAB_USER}"
     : "${GITLAB_PAT:?请在 git_constants.sh 设置 GITLAB_PAT}"
     : "${REPO_URL:?请在 git_constants.sh 设置 REPO_URL}"
-    BRANCH="${BRANCH:-main}"                  # 分支默认 main
+    BRANCH="${BRANCH:-main}"
 
     # -----------------------------
     # 进入目录
@@ -75,21 +83,21 @@ upload_to_github() {
     # -----------------------------
     # 确保本地分支为 main
     # -----------------------------
-    git branch -m main 2>/dev/null || true   # 如果已经是 main，忽略错误
+    git branch -m main 2>/dev/null || true
     echo "[DEBUG] 当前分支:"
     git branch
 
     # -----------------------------
-    # 设置远程仓库地址（使用 USERNAME+PAT 注入 URL）
+    # URL encode PAT 并拼接远程仓库 URL
     # -----------------------------
-    REPO_WITH_PAT="https://${GITLAB_USER}:${GITLAB_PAT}@$(echo "$REPO_URL" | sed 's#^https://##;s#/$##')"
+    GITLAB_PAT_ENCODED="$(url_encode "$GITLAB_PAT")"
+    REPO_WITH_PAT="https://${GITLAB_USER}:${GITLAB_PAT_ENCODED}@$(echo "$REPO_URL" | sed 's#^https://##;s#/$##')"
+
     git_set_remote "$GITLAB_USER" "$REPO_WITH_PAT"
+
     echo "[DEBUG] origin URL:"
     git remote -v
 
-    # -----------------------------
-    # 打印最终 push URL 便于调试
-    # -----------------------------
     log_info "调试：最终远程仓库 URL = $REPO_WITH_PAT"
     echo "调试：最终远程仓库 URL = $REPO_WITH_PAT"
 
