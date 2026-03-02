@@ -1,6 +1,7 @@
 #!/bin/bash
 # ==========================================
-# test_unit.sh - 一键执行 GitHub 上传测试（含回滚）
+# test_unit.sh - 一键执行 Git 上传测试（含回滚）
+# 动态 token + 支持首次 push main
 # ==========================================
 
 set -euo pipefail
@@ -27,19 +28,23 @@ for f in "${BIN_FILES[@]}"; do
     curl -sSfL "$REPO_BASE/bin/$f" -o "$BIN_DIR/$f" || echo "⚠️ 下载 bin/$f 失败"
 done
 
-# ====== 生成 git_constants.sh ======
+# ====== 动态生成或加载 git_constants.sh ======
 GIT_CONST="$HOME/git_constants.sh"
 
 if [ -f "$HOME/token.txt" ]; then
+    # token.txt 存在，生成或更新 git_constants.sh
     cp "$HOME/token.txt" "$GIT_CONST"
     echo "[INFO] ✅ 已从 token.txt 生成 git_constants.sh"
+elif [ -f "$GIT_CONST" ]; then
+    # token.txt 不存在，但 git_constants.sh 已存在，直接使用
+    echo "[INFO] ℹ️ 使用已有 git_constants.sh"
 else
-    echo "[WARN] ⚠️ token.txt 不存在，请手动编辑 $GIT_CONST"
+    # token.txt 和 git_constants.sh 都不存在，生成占位文件
     echo "GITLAB_USER=\"你的GitHub用户名\"" > "$GIT_CONST"
     echo "GITLAB_PAT=\"你的GitHub PAT\"" >> "$GIT_CONST"
     echo "REPO_URL=\"https://github.com/username/repo.git\"" >> "$GIT_CONST"
     echo "BRANCH=\"main\"" >> "$GIT_CONST"
-    echo "[INFO] 已生成占位 git_constants.sh，请自行确认内容"
+    echo "[WARN] ⚠️ token.txt 不存在，已生成占位 git_constants.sh，请确认内容"
 fi
 
 # ====== 初始化测试仓库 ======
