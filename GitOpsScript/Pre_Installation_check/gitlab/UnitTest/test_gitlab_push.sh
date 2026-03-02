@@ -1,46 +1,65 @@
 #!/bin/bash
 # ===============================================
-# upload.sh 自动化测试脚本 
+# 标准 Git 上传脚本（支持单元测试 + 真实远程）
 # ===============================================
 
 set -euo pipefail
 
-# ====== 测试配置 ======
-SCRIPT_PATH="./upload.sh"
-TEST_DIR="/tmp/test_git_upload_$$"
-REMOTE_DIR="/tmp/test_remote_repo_$$"
-BRANCH="main"
+########################################
+# 参数说明
+# $1: 本地仓库路径
+# $2: 远程仓库地址
+# $3: 分支名（默认 master）
+########################################
 
-echo "🔹 创建测试目录"
-mkdir -p "$TEST_DIR"
-mkdir -p "$REMOTE_DIR"
+LOCAL_DIR="${1:-}"
+REMOTE_URL="${2:-}"
+BRANCH="${3:-master}"
 
-echo "🔹 初始化远程裸仓库"
-git init --bare "$REMOTE_DIR"
-
-echo "🔹 初始化本地测试仓库"
-cd "$TEST_DIR"
-git init
-git remote add origin "$REMOTE_DIR"
-
-echo "hello world" > test.txt
-git add test.txt
-git commit -m "init commit"
-
-echo "🔹 执行被测试脚本"
-"$SCRIPT_PATH" "$TEST_DIR" "$BRANCH" "test commit"
-
-echo "🔹 验证远程仓库是否收到提交"
-
-if git --git-dir="$REMOTE_DIR" log &>/dev/null; then
-    echo "✅ 测试通过：代码成功推送到远程仓库"
-else
-    echo "❌ 测试失败：远程仓库没有提交记录"
+if [[ -z "$LOCAL_DIR" || -z "$REMOTE_URL" ]]; then
+    echo "❌ 用法: ./upload.sh <本地目录> <远程地址> [分支]"
     exit 1
 fi
 
-echo "🔹 清理测试目录"
-rm -rf "$TEST_DIR"
-rm -rf "$REMOTE_DIR"
+echo "🔹 进入目录: $LOCAL_DIR"
+cd "$LOCAL_DIR"
 
-echo "🎉 所有测试完成"
+########################################
+# 初始化仓库（如果还没有）
+########################################
+if [ ! -d ".git" ]; then
+    echo "🔹 初始化 Git 仓库"
+    git init
+fi
+
+########################################
+# 添加远程（如果不存在）
+########################################
+if ! git remote | grep -q origin; then
+    echo "🔹 添加远程仓库"
+    git remote add origin "$REMOTE_URL"
+else
+    echo "🔹 更新远程仓库地址"
+    git remote set-url origin "$REMOTE_URL"
+fi
+
+########################################
+# 添加文件并提交
+########################################
+echo "🔹 添加文件"
+git add .
+
+if git diff --cached --quiet; then
+    echo "⚠️ 没有变更可提交"
+else
+    echo "🔹 提交变更"
+    git commit -m "auto commit"
+fi
+
+########################################
+# 推送
+########################################
+echo "🔹 推送到 $BRANCH"
+git push -u origin "$BRANCH"
+
+echo "✅ 上传完成"
