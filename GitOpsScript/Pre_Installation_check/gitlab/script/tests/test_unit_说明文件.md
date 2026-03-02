@@ -9,6 +9,10 @@
 git_cli.sh → upload_to_github() → git_exec()
 也就是说，真正的业务逻辑核心就在 upload_to_github()。
 
+
+执行这一句可以，正确的判断是否能正确上传
+bash ./bin/git_cli.sh /path/to/test_dir "测试提交信息"
+
 ```
 
 
