@@ -3,29 +3,31 @@
 # git_core.sh - Git 上传核心函数（增强版）
 # 自动读取 ~/git_constants.sh
 # 支持回滚机制 + 默认 commit message
+# 每行都有详细注释
 # ==========================================
 
-set -euo pipefail
+set -euo pipefail                     # 开启严格模式：-e 出错停止，-u 未定义变量报错，-o pipefail 管道失败
 
 # -----------------------------
-# 获取当前脚本目录
+# 获取当前脚本所在目录
 # -----------------------------
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"  # 脚本绝对路径
 
 # -----------------------------
 # 加载日志模块和错误码
 # -----------------------------
-source "$SCRIPT_DIR/logger.sh"
-source "$SCRIPT_DIR/error_codes.sh"
+source "$SCRIPT_DIR/logger.sh"        # 彩色日志工具
+source "$SCRIPT_DIR/error_codes.sh"   # 错误码常量
+source "$SCRIPT_DIR/git_exec.sh"      # Git 执行层函数（git_add_all/git_commit/git_push等）
 
 # -----------------------------
 # 工具函数：检测操作系统，返回 Git credential helper
 # -----------------------------
 detect_os_helper() {
     case "$(uname)" in
-        Darwin) echo "osxkeychain" ;;
-        Linux)  echo "cache --timeout=3600" ;;
-        *)      echo "store" ;;
+        Darwin) echo "osxkeychain" ;;          # macOS 使用 osxkeychain
+        Linux)  echo "cache --timeout=3600" ;; # Linux 使用缓存 1 小时
+        *)      echo "store" ;;                 # 其他系统使用 store
     esac
 }
 
@@ -37,22 +39,22 @@ upload_to_github() {
     # 参数
     # -----------------------------
     local dir="$1"                             # 本地目录
-    local msg="${2:-自动提交 $(date)}"         # 提交信息，默认值
+    local msg="${2:-自动提交 $(date)}"         # 提交信息，默认自动生成
 
     # -----------------------------
-    # 从 ~/git_constants.sh 读取 GitHub 配置
+    # 读取 GitHub 配置
     # -----------------------------
     if [ ! -f "${HOME}/git_constants.sh" ]; then
         log_error "未找到 git_constants.sh，请先创建 ~/git_constants.sh"
         return 1
     fi
-    source "${HOME}/git_constants.sh"
+    source "${HOME}/git_constants.sh"         # 包含 GITLAB_USER / GITLAB_PAT / REPO_URL / 可选 BRANCH
 
     # 确认必须变量存在
     : "${GITLAB_USER:?请在 git_constants.sh 设置 GITLAB_USER}"
     : "${GITLAB_PAT:?请在 git_constants.sh 设置 GITLAB_PAT}"
     : "${REPO_URL:?请在 git_constants.sh 设置 REPO_URL}"
-    BRANCH="${BRANCH:-main}"  # 分支默认 main
+    BRANCH="${BRANCH:-main}"                   # 分支默认 main
 
     # -----------------------------
     # 进入目录
@@ -96,7 +98,7 @@ upload_to_github() {
     # -----------------------------
     # 执行 Git 操作
     # -----------------------------
-    set +e                         # 关闭严格模式
+    set +e                         # 关闭严格模式，捕获失败
     git_add_all                     # git add .
     git_commit "$msg"               # git commit -m "<msg>"
     git_push "$BRANCH"              # git push
