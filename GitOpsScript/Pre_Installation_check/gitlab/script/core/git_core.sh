@@ -1,9 +1,11 @@
 #!/bin/bash
 set -euo pipefail                   # 开启严格模式
 
-source "$(dirname "$0")/logger.sh"      # 日志模块
-source "$(dirname "$0")/error_codes.sh" # 错误码
-source "$(dirname "$0")/git_exec.sh"    # Git 执行层
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+source "$SCRIPT_DIR/logger.sh"      # 日志模块
+source "$SCRIPT_DIR/error_codes.sh" # 错误码
+source "$SCRIPT_DIR/git_exec.sh"    # Git 执行层
 
 detect_os_helper() {                # 自动识别操作系统
     case "$(uname)" in              # 获取系统名称
