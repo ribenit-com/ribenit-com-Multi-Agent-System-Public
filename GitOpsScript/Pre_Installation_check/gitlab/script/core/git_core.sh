@@ -3,7 +3,7 @@
 # git_core.sh - Git 上传核心函数（增强版）
 # 自动读取 ~/git_constants.sh
 # 支持回滚机制 + 默认 commit message
-# 支持首次 push main 分支，并改为 URL 注入 PAT 方式
+# 支持首次 push main 分支，并改为 URL 注入用户名+PAT 方式
 # 完整安全版
 # ==========================================
 
@@ -65,11 +65,11 @@ upload_to_github() {
     git branch -m main 2>/dev/null || true   # 如果已经是 main，忽略错误
 
     # -----------------------------
-    # 设置远程仓库地址（使用 PAT 注入 URL）
+    # 设置远程仓库地址（使用 USERNAME+PAT 注入 URL）
     # -----------------------------
-    # 去掉 REPO_URL 开头的 https:// 并注入 PAT
-    REPO_WITH_PAT="https://${GITLAB_PAT}@$(echo "$REPO_URL" | sed 's#^https://##;s#/$##')"  
-    git_set_remote "$GITLAB_USER" "$REPO_WITH_PAT"   # 设置 origin 为带 PAT 的 URL
+    # 去掉 REPO_URL 开头的 https:// 并注入用户名和 PAT
+    REPO_WITH_PAT="https://${GITLAB_USER}:${GITLAB_PAT}@$(echo "$REPO_URL" | sed 's#^https://##;s#/$##')"
+    git_set_remote "$GITLAB_USER" "$REPO_WITH_PAT"   # 设置 origin 为带用户名+PAT 的 URL
 
     # -----------------------------
     # 测试远程仓库连接
@@ -77,7 +77,7 @@ upload_to_github() {
     if git_ls_remote "$REPO_WITH_PAT"; then
         log_info "认证成功"
     else
-        log_error "认证失败，请检查 GITLAB_PAT 是否有效或 URL 是否正确"
+        log_error "认证失败，请检查 GITLAB_USER、GITLAB_PAT 或 URL 是否正确"
         return $E_AUTH_FAIL
     fi
 
@@ -95,7 +95,7 @@ upload_to_github() {
     git_commit "$msg"               # 提交修改
 
     # -----------------------------
-    # 首次 push 指定 upstream（URL 已含 PAT，无需 credential helper）
+    # 首次 push 指定 upstream（URL 已含 USERNAME+PAT，无需 credential helper）
     # -----------------------------
     git push -u origin "$BRANCH"
     status=$?                       # 捕获 push 状态
