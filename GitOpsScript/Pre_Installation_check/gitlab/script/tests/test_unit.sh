@@ -2,15 +2,16 @@
 # ==========================================
 # test_unit.sh - 一键执行 Git 上传测试（含回滚）
 # 每次执行都强制下载最新 core/ 和 bin/ 脚本
-# 版本: v1.2
-# 修改日期: 2026-03-02 18:40
+# 自动下载 git_constants.sh（如果不存在）
+# 版本: v1.3
+# 修改日期: 2026-03-02 19:00
 # ==========================================
 
-set -euo pipefail  # 开启严格模式
+set -euo pipefail  # 严格模式
 
 # ====== 版本信息打印 ======
 SCRIPT_VERSIONS=(
-    "test_unit.sh:v1.2:2026-03-02 18:40"
+    "test_unit.sh:v1.3:2026-03-02 19:00"
     "git_core.sh:v1.4:2026-03-02 18:30"
     "git_cli.sh:v1.0:2026-03-02 16:00"
     "logger.sh:v1.2:2026-03-02 15:45"
@@ -50,12 +51,15 @@ for f in "${BIN_FILES[@]}"; do
     curl -sSfL "$REPO_BASE/bin/$f" -o "$BIN_DIR/$f" || echo "⚠️ 下载 bin/$f 失败"
 done
 
-# ====== 配置文件路径（严格只读） ======
+# ====== 自动下载配置文件（如果不存在） ======
 GIT_CONST="$CONFIG_DIR/$CONFIG_FILE"
 
 if [ ! -f "$GIT_CONST" ]; then
-    echo "[ERROR] ⚠️ 配置文件 $GIT_CONST 不存在，请手动创建并填写真实 Git 信息"
-    exit 1
+    echo "[INFO] ℹ️ 配置文件 $GIT_CONST 不存在，尝试自动下载..."
+    curl -sSfL "$REPO_BASE/config/$CONFIG_FILE" -o "$GIT_CONST" \
+        && echo "[INFO] 配置文件已下载到 $GIT_CONST" \
+        || { echo "[ERROR] 下载 config/$CONFIG_FILE 失败，请手动创建"; exit 1; }
+    echo "[WARN] ⚠️ 配置文件可能是模板，请填写真实 Git 信息后才能上传成功"
 fi
 
 # 输出加载信息
