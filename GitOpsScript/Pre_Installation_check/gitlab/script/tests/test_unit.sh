@@ -2,40 +2,58 @@
 # ==========================================
 # test_unit.sh - 一键执行 Git 上传测试（含回滚）
 # 每次执行都强制下载最新 core/ 和 bin/ 脚本
+# 版本: v1.2
+# 修改日期: 2026-03-02 17:00
 # ==========================================
 
 set -euo pipefail  # 开启严格模式
 
+# ====== 版本信息打印 ======
+SCRIPT_VERSIONS=(
+    "test_unit.sh:v1.2:2026-03-02 17:00"
+    "git_core.sh:v1.3:2026-03-02 16:10"
+    "git_cli.sh:v1.0:2026-03-02 16:00"
+    "logger.sh:v1.2:2026-03-02 15:45"
+    "error_codes.sh:v1.0:2026-03-02 15:30"
+    "git_exec.sh:v1.1:2026-03-02 15:50"
+)
+echo "===== 当前脚本及依赖版本 ====="
+for v in "${SCRIPT_VERSIONS[@]}"; do
+    IFS=':' read -r file version modified <<< "$v"
+    echo "■■■$file■■■：■■■$version■■■：■■■$modified■■■"
+done
+echo "================================="
+
 # ====== 基础路径 ======
 BASE_DIR="$HOME/test_git_upload"         # 定义基础目录
-mkdir -p "$BASE_DIR"                     # 确保目录存在
-cd "$BASE_DIR"                           # 切换到基础目录
+mkdir -p "$BASE_DIR"
+cd "$BASE_DIR"
 
 # ====== 下载 core/ 和 bin/ 脚本 ======
 REPO_BASE="https://raw.githubusercontent.com/ribenit-com/ribenit-com-Multi-Agent-System-Public/main/GitOpsScript/Pre_Installation_check/gitlab/script"
-CORE_DIR="$BASE_DIR/core"                # 核心脚本存放目录
-BIN_DIR="$BASE_DIR/bin"                  # 命令入口脚本存放目录
-CONFIG_DIR="$BASE_DIR/config"            # config 目录
-mkdir -p "$CORE_DIR" "$BIN_DIR" "$CONFIG_DIR"  # 创建目录
+CORE_DIR="$BASE_DIR/core"
+BIN_DIR="$BASE_DIR/bin"
+CONFIG_DIR="$BASE_DIR/config"
+mkdir -p "$CORE_DIR" "$BIN_DIR" "$CONFIG_DIR"
 
-# 定义核心脚本列表
+# 核心脚本
 CORE_FILES=("error_codes.sh" "git_core.sh" "git_exec.sh" "logger.sh")
-# 定义 bin 脚本列表
+# bin 脚本
 BIN_FILES=("git_cli.sh")
-# 定义 config 文件
+# config 文件
 CONFIG_FILE="git_constants.sh"
 
-# ====== 下载 core 脚本（每次强制下载最新） ======
+# 下载 core
 for f in "${CORE_FILES[@]}"; do
     curl -sSfL "$REPO_BASE/core/$f" -o "$CORE_DIR/$f" || echo "⚠️ 下载 core/$f 失败"
 done
 
-# ====== 下载 bin 脚本（每次强制下载最新） ======
+# 下载 bin
 for f in "${BIN_FILES[@]}"; do
     curl -sSfL "$REPO_BASE/bin/$f" -o "$BIN_DIR/$f" || echo "⚠️ 下载 bin/$f 失败"
 done
 
-# ====== 下载 config/git_constants.sh（如果不存在才生成占位） ======
+# 下载或生成 config/git_constants.sh
 GIT_CONST="$CONFIG_DIR/$CONFIG_FILE"
 if [ ! -f "$GIT_CONST" ]; then
     echo "GITLAB_USER=\"你的GitHub用户名\"" > "$GIT_CONST"
