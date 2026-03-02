@@ -53,17 +53,10 @@ done
 # ====== 统一读取配置文件 ======
 GIT_CONST="$CONFIG_DIR/$CONFIG_FILE"
 
-# 如果文件不存在，生成占位文件
+# 只读取，不生成任何占位符
 if [ ! -f "$GIT_CONST" ]; then
-    cat > "$GIT_CONST" <<'EOF'
-GITLAB_USER="你的GitHub用户名"
-GITLAB_PAT="你的GitHub PAT"
-REPO_URL="https://github.com/username/repo.git"
-BRANCH="main"
-EOF
-    echo "[WARN] ⚠️ git_constants.sh 不存在，已生成占位文件，请手动编辑为真实值："
-    cat "$GIT_CONST"
-    exit 1  # 强制用户填写真实信息
+    echo "[ERROR] ⚠️ 配置文件 $GIT_CONST 不存在，请先创建并填写真实 Git 信息"
+    exit 1
 fi
 
 # 输出加载信息
