@@ -2,10 +2,10 @@
 # ==========================================
 # git_core.sh - Git 上传核心函数（增强版）
 # 版本: v1.4
-# 修改日期: 2026-03-02 18:10
+# 修改日期: 2026-03-02 18:20
 # 作者: ribenit-com
 # 说明:
-#   - 固定读取 git_constants.sh
+#   - 仅读取固定常量文件 git_constants.sh
 #   - 支持回滚机制 + 默认 commit message
 #   - 支持首次 push main 分支，并改为 URL 注入用户名+PAT 方式
 #   - 输出 Bash 版本用于调试
@@ -16,7 +16,7 @@ set -euo pipefail  # 开启严格模式
 # -----------------------------
 # 输出版本信息
 # -----------------------------
-echo "[DEBUG] git_core.sh v1.4, last modified 2026-03-02 18:10"
+echo "[DEBUG] git_core.sh v1.4, last modified 2026-03-02 18:20"
 echo "[DEBUG] Bash version: $BASH_VERSION"
 
 # -----------------------------
@@ -68,7 +68,7 @@ upload_to_github() {
     # -----------------------------
     GIT_CONST_PATH="/GitOpsScript/Pre_Installation_check/gitlab/script/config/git_constants.sh"
     if [ ! -f "$GIT_CONST_PATH" ]; then
-        log_error "未找到 $GIT_CONST_PATH，请先创建配置文件"
+        log_error "未找到 $GIT_CONST_PATH，请手动创建配置文件"
         return 1
     fi
 
@@ -78,17 +78,20 @@ upload_to_github() {
     source "$GIT_CONST_PATH"
 
     # -----------------------------
+    # 验证常量值是否存在
+    # -----------------------------
+    : "${GITLAB_USER:?请在 git_constants.sh 设置 GITLAB_USER}"
+    : "${GITLAB_PAT:?请在 git_constants.sh 设置 GITLAB_PAT}"
+    : "${REPO_URL:?请在 git_constants.sh 设置 REPO_URL}"
+    BRANCH="${BRANCH:-main}"
+
+    # -----------------------------
     # 打印实际读取的值（PAT 明文显示）
     # -----------------------------
     echo "【GITLAB_USER：$GITLAB_USER】"
     echo "【GITLAB_PAT：$GITLAB_PAT】"
     echo "【REPO_URL：$REPO_URL】"
-    echo "【BRANCH：${BRANCH:-main}】"
-
-    : "${GITLAB_USER:?请在 git_constants.sh 设置 GITLAB_USER}"
-    : "${GITLAB_PAT:?请在 git_constants.sh 设置 GITLAB_PAT}"
-    : "${REPO_URL:?请在 git_constants.sh 设置 REPO_URL}"
-    BRANCH="${BRANCH:-main}"
+    echo "【BRANCH：$BRANCH】"
 
     # -----------------------------
     # 进入目录
