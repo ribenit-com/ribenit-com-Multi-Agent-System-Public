@@ -1,13 +1,23 @@
 #!/bin/bash
 # ==========================================
 # git_core.sh - Git 上传核心函数（增强版）
-# 自动读取 ~/git_constants.sh
-# 支持回滚机制 + 默认 commit message
-# 支持首次 push main 分支，并改为 URL 注入用户名+PAT 方式
-# 完整安全版，增加详细调试打印与 PAT URL encode
+# 版本: v1.1
+# 修改日期: 2026-03-02 15:30
+# 作者: ribenit-com
+# 说明: 自动读取 ~/git_constants.sh
+#       支持回滚机制 + 默认 commit message
+#       支持首次 push main 分支，并改为 URL 注入用户名+PAT 方式
+#       完整安全版，增加详细调试打印与 PAT URL encode
+#       输出 Bash 版本用于调试
 # ==========================================
 
 set -euo pipefail  # 开启严格模式
+
+# -----------------------------
+# 输出版本信息
+# -----------------------------
+echo "[DEBUG] git_core.sh v1.1, last modified 2026-03-02 15:30"
+echo "[DEBUG] Bash version: $BASH_VERSION"
 
 # -----------------------------
 # 获取当前脚本目录
