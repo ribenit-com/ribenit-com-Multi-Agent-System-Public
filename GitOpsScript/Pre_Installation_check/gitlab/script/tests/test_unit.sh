@@ -3,14 +3,14 @@
 # test_unit.sh - 一键执行 Git 上传测试（含回滚）
 # 每次执行都强制下载最新 core/ 和 bin/ 脚本
 # 版本: v1.2
-# 修改日期: 2026-03-02 17:15
+# 修改日期: 2026-03-02 17:30
 # ==========================================
 
 set -euo pipefail  # 开启严格模式
 
 # ====== 版本信息打印 ======
 SCRIPT_VERSIONS=(
-    "test_unit.sh:v1.2:2026-03-02 17:15"
+    "test_unit.sh:v1.2:2026-03-02 17:30"
     "git_core.sh:v1.4:2026-03-02 16:50"
     "git_cli.sh:v1.0:2026-03-02 16:00"
     "logger.sh:v1.2:2026-03-02 15:45"
@@ -50,14 +50,17 @@ for f in "${BIN_FILES[@]}"; do
     curl -sSfL "$REPO_BASE/bin/$f" -o "$BIN_DIR/$f" || echo "⚠️ 下载 bin/$f 失败"
 done
 
-# ====== 检查或生成 config/git_constants.sh ======
+# ====== 统一读取配置文件 ======
 GIT_CONST="$CONFIG_DIR/$CONFIG_FILE"
 if [ ! -f "$GIT_CONST" ]; then
-    echo "GITLAB_USER=\"你的GitHub用户名\"" > "$GIT_CONST"
-    echo "GITLAB_PAT=\"你的GitHub PAT\"" >> "$GIT_CONST"
-    echo "REPO_URL=\"https://github.com/username/repo.git\"" >> "$GIT_CONST"
-    echo "BRANCH=\"main\"" >> "$GIT_CONST"
-    echo "[WARN] ⚠️ git_constants.sh 不存在，已生成占位文件，请确认内容"
+    cat > "$GIT_CONST" <<'EOF'
+GITLAB_USER="你的GitHub用户名"
+GITLAB_PAT="你的GitHub PAT"
+REPO_URL="https://github.com/username/repo.git"
+BRANCH="main"
+EOF
+    echo "[WARN] ⚠️ git_constants.sh 不存在，已生成占位文件，请确认内容："
+    cat "$GIT_CONST"
 else
     echo "[INFO] ℹ️ 使用已有 git_constants.sh，内容如下："
     cat "$GIT_CONST"
