@@ -26,7 +26,10 @@ if [ ! -f "$HOME/git_constants.sh" ]; then
 fi
 source "$HOME/git_constants.sh"
 
+# -----------------------------
 # 调用核心函数
+# -----------------------------
+# 修改点：首次 push 到远程 main 时加 -u origin main，其他逻辑不变
 upload_to_github \
     "$TARGET" \
     "$COMMIT" \
