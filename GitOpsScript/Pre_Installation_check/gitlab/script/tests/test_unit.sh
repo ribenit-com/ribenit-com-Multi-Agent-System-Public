@@ -3,15 +3,15 @@
 # test_unit.sh - 一键执行 Git 上传测试（含回滚）
 # 每次执行都强制下载最新 core/ 和 bin/ 脚本
 # 版本: v1.2
-# 修改日期: 2026-03-02 17:45
+# 修改日期: 2026-03-02 18:30
 # ==========================================
 
 set -euo pipefail  # 开启严格模式
 
 # ====== 版本信息打印 ======
 SCRIPT_VERSIONS=(
-    "test_unit.sh:v1.2:2026-03-02 17:45"
-    "git_core.sh:v1.4:2026-03-02 16:50"
+    "test_unit.sh:v1.2:2026-03-02 18:30"
+    "git_core.sh:v1.4:2026-03-02 18:20"
     "git_cli.sh:v1.0:2026-03-02 16:00"
     "logger.sh:v1.2:2026-03-02 15:45"
     "error_codes.sh:v1.0:2026-03-02 15:30"
@@ -50,12 +50,11 @@ for f in "${BIN_FILES[@]}"; do
     curl -sSfL "$REPO_BASE/bin/$f" -o "$BIN_DIR/$f" || echo "⚠️ 下载 bin/$f 失败"
 done
 
-# ====== 统一读取配置文件 ======
+# ====== 读取配置文件（严格只读） ======
 GIT_CONST="$CONFIG_DIR/$CONFIG_FILE"
 
-# 只读取，不生成任何占位符
 if [ ! -f "$GIT_CONST" ]; then
-    echo "[ERROR] ⚠️ 配置文件 $GIT_CONST 不存在，请先创建并填写真实 Git 信息"
+    echo "[ERROR] ⚠️ 配置文件 $GIT_CONST 不存在，请手动创建并填写真实 Git 信息"
     exit 1
 fi
 
@@ -63,14 +62,18 @@ fi
 echo "[INFO] ℹ️ 使用配置文件 $GIT_CONST，内容如下："
 cat "$GIT_CONST"
 
-# ====== 初始化测试仓库 ======
+# -----------------------------
+# 初始化测试仓库
+# -----------------------------
 TEST_REPO="$BASE_DIR/test_repo"
 mkdir -p "$TEST_REPO"
 cd "$TEST_REPO"
 git init
 echo "测试文件 $(date)" > test.txt
 
-# ====== 执行上传 ======
+# -----------------------------
+# 执行上传
+# -----------------------------
 echo "[INFO] 开始执行上传测试..."
 bash "$BIN_DIR/git_cli.sh" "$TEST_REPO" "测试提交 $(date)"
 
