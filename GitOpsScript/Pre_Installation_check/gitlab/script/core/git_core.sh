@@ -4,7 +4,7 @@
 # 自动读取 ~/git_constants.sh
 # 支持回滚机制 + 默认 commit message
 # 支持首次 push main 分支，并改为 URL 注入用户名+PAT 方式
-# 完整安全版
+# 完整安全版，增加调试打印 push URL
 # ==========================================
 
 set -euo pipefail  # 开启严格模式：-e 出错停止，-u 未定义变量报错，-o pipefail 管道失败报错
@@ -70,6 +70,12 @@ upload_to_github() {
     # 去掉 REPO_URL 开头的 https:// 并注入用户名和 PAT
     REPO_WITH_PAT="https://${GITLAB_USER}:${GITLAB_PAT}@$(echo "$REPO_URL" | sed 's#^https://##;s#/$##')"
     git_set_remote "$GITLAB_USER" "$REPO_WITH_PAT"   # 设置 origin 为带用户名+PAT 的 URL
+
+    # -----------------------------
+    # 打印最终 push URL 便于调试
+    # -----------------------------
+    log_info "调试：最终远程仓库 URL = $REPO_WITH_PAT"
+    echo "调试：最终远程仓库 URL = $REPO_WITH_PAT"   # 可直接在控制台看到
 
     # -----------------------------
     # 测试远程仓库连接
