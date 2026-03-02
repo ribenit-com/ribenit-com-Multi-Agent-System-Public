@@ -1,11 +1,11 @@
 #!/bin/bash
 # ==========================================
 # git_core.sh - Git 上传核心函数（增强版）
-# 版本: v1.3
-# 修改日期: 2026-03-02 16:10
+# 版本: v1.4
+# 修改日期: 2026-03-02 16:50
 # 作者: ribenit-com
 # 说明:
-#   - 自动读取 ~/git_constants.sh
+#   - 自动读取 config/git_constants.sh
 #   - 支持回滚机制 + 默认 commit message
 #   - 支持首次 push main 分支，并改为 URL 注入用户名+PAT 方式
 #   - 完整安全版，增加详细调试打印与 PAT URL encode
@@ -18,7 +18,7 @@ set -euo pipefail  # 开启严格模式
 # -----------------------------
 # 输出版本信息
 # -----------------------------
-echo "[DEBUG] git_core.sh v1.3, last modified 2026-03-02 16:10"
+echo "[DEBUG] git_core.sh v1.4, last modified 2026-03-02 16:50"
 echo "[DEBUG] Bash version: $BASH_VERSION"
 
 # -----------------------------
@@ -66,15 +66,15 @@ upload_to_github() {
     echo "[DEBUG] 目标目录 dir=$dir"
 
     # -----------------------------
-    # 加载 git_constants.sh
+    # 加载 config/git_constants.sh
     # -----------------------------
-    if [ ! -f "${HOME}/git_constants.sh" ]; then
-        log_error "未找到 git_constants.sh，请先创建 ~/git_constants.sh"
+    CONFIG_FILE="$SCRIPT_DIR/config/git_constants.sh"
+    if [ ! -f "$CONFIG_FILE" ]; then
+        log_error "未找到 $CONFIG_FILE，请先创建"
         return 1
     fi
-
-    echo "[DEBUG] 加载 ${HOME}/git_constants.sh"
-    source "${HOME}/git_constants.sh"
+    echo "[DEBUG] 加载 $CONFIG_FILE"
+    source "$CONFIG_FILE"
 
     # -----------------------------
     # 打印实际读取的值（PAT 明文显示）
