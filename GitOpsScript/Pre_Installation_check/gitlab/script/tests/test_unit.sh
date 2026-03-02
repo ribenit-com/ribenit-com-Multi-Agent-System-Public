@@ -3,15 +3,15 @@
 # test_unit.sh - 一键执行 Git 上传测试（含回滚）
 # 每次执行都强制下载最新 core/ 和 bin/ 脚本
 # 版本: v1.2
-# 修改日期: 2026-03-02 17:00
+# 修改日期: 2026-03-02 17:15
 # ==========================================
 
 set -euo pipefail  # 开启严格模式
 
 # ====== 版本信息打印 ======
 SCRIPT_VERSIONS=(
-    "test_unit.sh:v1.2:2026-03-02 17:00"
-    "git_core.sh:v1.3:2026-03-02 16:10"
+    "test_unit.sh:v1.2:2026-03-02 17:15"
+    "git_core.sh:v1.4:2026-03-02 16:50"
     "git_cli.sh:v1.0:2026-03-02 16:00"
     "logger.sh:v1.2:2026-03-02 15:45"
     "error_codes.sh:v1.0:2026-03-02 15:30"
@@ -25,7 +25,7 @@ done
 echo "================================="
 
 # ====== 基础路径 ======
-BASE_DIR="$HOME/test_git_upload"         # 定义基础目录
+BASE_DIR="$HOME/test_git_upload"
 mkdir -p "$BASE_DIR"
 cd "$BASE_DIR"
 
@@ -36,11 +36,8 @@ BIN_DIR="$BASE_DIR/bin"
 CONFIG_DIR="$BASE_DIR/config"
 mkdir -p "$CORE_DIR" "$BIN_DIR" "$CONFIG_DIR"
 
-# 核心脚本
 CORE_FILES=("error_codes.sh" "git_core.sh" "git_exec.sh" "logger.sh")
-# bin 脚本
 BIN_FILES=("git_cli.sh")
-# config 文件
 CONFIG_FILE="git_constants.sh"
 
 # 下载 core
@@ -53,7 +50,7 @@ for f in "${BIN_FILES[@]}"; do
     curl -sSfL "$REPO_BASE/bin/$f" -o "$BIN_DIR/$f" || echo "⚠️ 下载 bin/$f 失败"
 done
 
-# 下载或生成 config/git_constants.sh
+# ====== 检查或生成 config/git_constants.sh ======
 GIT_CONST="$CONFIG_DIR/$CONFIG_FILE"
 if [ ! -f "$GIT_CONST" ]; then
     echo "GITLAB_USER=\"你的GitHub用户名\"" > "$GIT_CONST"
@@ -62,7 +59,8 @@ if [ ! -f "$GIT_CONST" ]; then
     echo "BRANCH=\"main\"" >> "$GIT_CONST"
     echo "[WARN] ⚠️ git_constants.sh 不存在，已生成占位文件，请确认内容"
 else
-    echo "[INFO] ℹ️ 使用已有 git_constants.sh"
+    echo "[INFO] ℹ️ 使用已有 git_constants.sh，内容如下："
+    cat "$GIT_CONST"
 fi
 
 # ====== 初始化测试仓库 ======
