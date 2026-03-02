@@ -3,7 +3,7 @@
 # git_core.sh - Git 上传核心函数（增强版）
 # 自动读取 ~/git_constants.sh
 # 支持回滚机制 + 默认 commit message
-# 已修改支持首次 push 到 main 分支
+# 已修改支持首次 push 到 main 分支，并改为 URL 注入 PAT 方式
 # ==========================================
 
 set -euo pipefail                     # 开启严格模式：-e 出错停止，-u 未定义变量报错，-o pipefail 管道失败报错
@@ -63,31 +63,20 @@ upload_to_github() {
     cd "$dir" || { log_error "目录不存在: $dir"; return 1; }
 
     # -----------------------------
-    # 配置 Git credential helper
-    # -----------------------------
-    helper=$(detect_os_helper)
-    git config credential.helper "$helper"
-
-    # -----------------------------
     # 确保本地分支为 main
     # -----------------------------
     git branch -m main 2>/dev/null || true   # 如果已经是 main，忽略错误
 
     # -----------------------------
-    # 设置远程仓库地址
+    # 设置远程仓库地址（使用 PAT 注入 URL）
     # -----------------------------
-    git_set_remote "$GITLAB_USER" "$REPO_URL"   # 使用 git_exec.sh 中的函数
-
-    # -----------------------------
-    # 注入 GitHub PAT 到凭证缓存
-    # -----------------------------
-    printf "protocol=https\nhost=github.com\nusername=%s\npassword=%s\n\n" \
-           "$GITLAB_USER" "$GITLAB_PAT" | git credential approve
+    REPO_WITH_PAT="https://${GITLAB_PAT}@${REPO_URL#https://}"   # 在 URL 中注入 PAT
+    git_set_remote "$GITLAB_USER" "$REPO_WITH_PAT"               # 设置 origin 为带 PAT 的 URL
 
     # -----------------------------
     # 测试远程仓库连接
     # -----------------------------
-    if git_ls_remote "$REPO_URL"; then
+    if git_ls_remote "$REPO_WITH_PAT"; then
         log_info "认证成功"
     else
         log_error "认证失败"
@@ -107,7 +96,7 @@ upload_to_github() {
     git_add_all                     # 添加所有修改
     git_commit "$msg"               # 提交修改
 
-    # 首次 push 指定 upstream
+    # 首次 push 指定 upstream（URL 已含 PAT，无需 credential helper）
     git push -u origin "$BRANCH"
     status=$?                       # 捕获 push 状态
     set -e                          # 恢复严格模式
