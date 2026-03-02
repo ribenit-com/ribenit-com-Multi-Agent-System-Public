@@ -1,3 +1,19 @@
+```
+简约版：
+
+入口脚本：git_cli.sh → 调用
+核心方法：upload_to_github()（在 git_core.sh 里） → 真正处理 Git 上传
+辅助执行：git_exec()（在 git_exec.sh 里） → 执行具体 Git 命令
+
+调用顺序：
+git_cli.sh → upload_to_github() → git_exec()
+也就是说，真正的业务逻辑核心就在 upload_to_github()。
+
+```
+
+
+
+
 ```mermaid
 flowchart TD
     A([👤 用户执行脚本\n./bin/git_cli.sh &lt;目录&gt; &lsqb;commit&rsqb;]) --> B
