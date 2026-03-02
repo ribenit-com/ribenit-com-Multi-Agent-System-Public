@@ -3,15 +3,16 @@
 # test_unit.sh - 一键执行 Git 上传测试（含回滚）
 # 每次执行都强制下载最新 core/ 和 bin/ 脚本
 # 自动下载 git_constants.sh（如果不存在）
-# 版本: v1.3
-# 修改日期: 2026-03-02 19:00
+# 支持安全 push（SSH 或 credential helper）
+# 版本: v1.4
+# 修改日期: 2026-03-02 19:30
 # ==========================================
 
 set -euo pipefail  # 严格模式
 
 # ====== 版本信息打印 ======
 SCRIPT_VERSIONS=(
-    "test_unit.sh:v1.3:2026-03-02 19:00"
+    "test_unit.sh:v1.4:2026-03-02 19:30"
     "git_core.sh:v1.4:2026-03-02 18:30"
     "git_cli.sh:v1.0:2026-03-02 16:00"
     "logger.sh:v1.2:2026-03-02 15:45"
@@ -59,7 +60,7 @@ if [ ! -f "$GIT_CONST" ]; then
     curl -sSfL "$REPO_BASE/config/$CONFIG_FILE" -o "$GIT_CONST" \
         && echo "[INFO] 配置文件已下载到 $GIT_CONST" \
         || { echo "[ERROR] 下载 config/$CONFIG_FILE 失败，请手动创建"; exit 1; }
-    echo "[WARN] ⚠️ 配置文件可能是模板，请填写真实 Git 信息后才能上传成功"
+    echo "[WARN] ⚠️ 配置文件可能是模板，请填写真实 Git 信息（SSH 或 HTTPS PAT）后才能上传成功"
 fi
 
 # 输出加载信息
@@ -79,9 +80,19 @@ git init
 echo "测试文件 $(date)" > test.txt
 
 # -----------------------------
+# 检查是否有 SSH key 或 HTTPS credential helper
+# -----------------------------
+if ssh -T git@github.com 2>&1 | grep -q "successfully authenticated"; then
+    echo "[INFO] ℹ️ 检测到可用 SSH Key，将使用 SSH 推送"
+else
+    echo "[INFO] ℹ️ 未检测到 SSH Key，请确保已配置 HTTPS credential helper 或 gh CLI 登录"
+fi
+
+# -----------------------------
 # 执行上传
 # -----------------------------
 echo "[INFO] 开始执行上传测试..."
+# 使用 git_cli.sh 进行上传
 bash "$BIN_DIR/git_cli.sh" "$TEST_REPO" "测试提交 $(date)"
 
 echo "[INFO] 上传测试完成，日志请查看控制台输出"
