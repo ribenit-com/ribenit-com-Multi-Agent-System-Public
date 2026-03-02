@@ -5,7 +5,7 @@ set -euo pipefail
 REPO_RAW_BASE="https://raw.githubusercontent.com/ribenit-com/ribenit-com-Multi-Agent-System-Public/refs/heads/main/GitOpsScript/Pre_Installation_check/gitlab/script"
 CONSTANTS_URL="https://raw.githubusercontent.com/ribenit-com/ribenit-com-Multi-Agent-System-Public/refs/heads/main/GitOpsScript/config/git_constants.sh"
 
-BASE_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+BASE_DIR="$(cd "$(dirname "$0")" && pwd)"
 CORE_DIR="$BASE_DIR/core"
 BIN_DIR="$BASE_DIR/bin"
 CONFIG_DIR="$BASE_DIR/config"
