@@ -1,43 +1,40 @@
-#!/bin/bash                          # 使用 bash
-set -euo pipefail                    # 严格模式：
-                                     # -e  出错立即退出
-                                     # -u  未定义变量报错
-                                     # -o pipefail 管道错误捕获
+#!/bin/bash
+# ==========================================
+# git_exec.sh - Git 执行工具脚本
+# 修复路径问题，确保依赖 logger.sh 可用
+# ==========================================
 
-source "$(dirname "$0")/logger.sh"       # 引入日志模块
-source "$(dirname "$0")/error_codes.sh"  # 引入错误码
+# ====== 获取当前脚本所在目录 ======
+# BASH_SOURCE[0] 获取当前脚本路径
+# cd + pwd 获取绝对路径
+SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 
-git_safe() {                         # 安全执行 git 命令
-    if ! "$@"; then                  # 执行传入命令
-        log_error "Git 命令失败: $*" # 如果失败打印错误
-        return $E_GIT_ERROR          # 返回 Git 错误码
+# ====== 加载 logger.sh ======
+# 依赖文件在同一目录下，用绝对路径引用
+source "$SCRIPT_DIR/logger.sh"
+
+# ====== 示例函数：执行 Git 命令并打印 ======
+git_exec() {
+    # $1 是 Git 命令
+    local cmd="$1"
+    
+    # 打印正在执行的命令
+    log_info "执行 Git 命令: $cmd"
+    
+    # 执行命令
+    eval "$cmd"
+    
+    # 捕获执行状态
+    local status=$?
+    if [ $status -ne 0 ]; then
+        log_error "Git 命令失败，状态码: $status"
+    else
+        log_info "Git 命令执行成功"
     fi
 }
 
-git_add_all() {                      # git add .
-    git_safe git add .               # 通过安全封装执行
-}
-
-git_commit() {                       # 提交函数
-    local msg="$1"                   # 提交信息
-    git commit -m "$msg" || true     # 如果没有变更避免报错
-}
-
-git_push() {                         # 推送函数
-    local branch="$1"                # 目标分支
-    git_safe git push origin "$branch" || return $E_PUSH_FAIL
-                                     # 执行 push，失败返回错误码
-}
-
-git_set_remote() {                   # 设置远程地址
-    local user="$1"                  # 用户名
-    local repo="$2"                  # 仓库 URL
-    git_safe git remote set-url origin "https://${user}@${repo#https://}"
-                                     # 替换 https:// 并插入用户名
-}
-
-git_ls_remote() {                    # 测试远程连接
-    local repo="$1"                  # 仓库地址
-    git ls-remote "$repo" &>/dev/null
-                                     # 检查是否可访问
-}
+# ====== 如果脚本被直接执行，示例调用 ======
+# 可在测试或调试时使用
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    git_exec "git --version"
+fi
