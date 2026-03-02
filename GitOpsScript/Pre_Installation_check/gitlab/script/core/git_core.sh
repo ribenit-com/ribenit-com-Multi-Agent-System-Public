@@ -1,3 +1,21 @@
+#!/bin/bash
+set -euo pipefail                   # 开启严格模式
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+source "$SCRIPT_DIR/logger.sh"      # 日志模块
+source "$SCRIPT_DIR/error_codes.sh" # 错误码
+source "$SCRIPT_DIR/git_exec.sh"    # Git 执行层
+
+detect_os_helper() {                # 自动识别操作系统
+    case "$(uname)" in
+        Darwin) echo "osxkeychain" ;;
+        Linux)  echo "cache --timeout=3600" ;;
+        *)      echo "store" ;;
+    esac
+}
+
+# ====== 替换为增强版 upload_to_github 函数 ======
 upload_to_github() {                # 主函数（增强版，带回滚机制）
 
     local dir="$1"                  # 本地目录参数
@@ -32,7 +50,6 @@ upload_to_github() {                # 主函数（增强版，带回滚机制）
     # -----------------------------
     log_info "创建临时 stash 备份（如果有未提交更改）"
     git stash push -m "pre-upload backup" || log_info "没有需要 stash 的更改"
-    # 如果没有未提交更改，也不会报错，仅打印信息
 
     # -----------------------------
     # 执行 Git 操作，捕获错误，保证失败可以回滚
